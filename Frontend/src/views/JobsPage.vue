@@ -225,54 +225,64 @@ const getPageNumbers = () => {
   
   return pages;
 };
-
 const approveJob = async (id) => {
-  const job = jobs.value.find(j => j.id === id);
-  if (job) job.processing = true;
+  // Find the job in the jobs.data array
+  const jobIndex = jobs.value.data.findIndex(j => j.id === id);
+  if (jobIndex !== -1) {
+    jobs.value.data[jobIndex].processing = true;
+  }
   
   try {
     await api.approveJob(id);
-    isSuccess.value = true;
-    successMessage.value = 'Job approved successfully';
-    setTimeout(() => {
-      isSuccess.value = false;
-    }, 2000);
-    await fetchJobs();
+    showMessage('Job approved successfully');
+    await fetchJobs(jobs.value.current_page); // Reload current page
   } catch (error) {
-    console.error("Error approving job:", error);
-    isError.value = true;
-    errorMessage.value = error.response?.data?.message || 'Failed to approve job';
-    setTimeout(() => {
-      isError.value = false;
-    }, 2000);
+    showMessage(error.response?.data?.message || 'Failed to approve job', 'alert-danger');
   } finally {
-    if (job) job.processing = false;
+    if (jobIndex !== -1) {
+      jobs.value.data[jobIndex].processing = false;
+    }
   }
-};
+}
 
 const declineJob = async (id) => {
-  const job = jobs.value.find(j => j.id === id);
-  if (job) job.processing = true;
+  // Find the job in the jobs.data array
+  const jobIndex = jobs.value.data.findIndex(j => j.id === id);
+  if (jobIndex !== -1) {
+    jobs.value.data[jobIndex].processing = true;
+  }
   
   try {
     await api.declineJob(id);
-    isSuccess.value = true;
-    successMessage.value = 'Job rejected successfully';
-    setTimeout(() => {
-      isSuccess.value = false;
-    }, 2000);
-    await fetchJobs();
+    showMessage('Job rejected successfully');
+    await fetchJobs(jobs.value.current_page); // Reload current page
   } catch (error) {
-    console.error("Error rejecting job:", error);
-    isError.value = true;
-    errorMessage.value = error.response?.data?.message || 'Failed to reject job';
-    setTimeout(() => {
-      isError.value = false;
-    }, 2000);
+    showMessage(error.response?.data?.message || 'Failed to reject job', 'alert-danger');
   } finally {
-    if (job) job.processing = false;
+    if (jobIndex !== -1) {
+      jobs.value.data[jobIndex].processing = false;
+    }
   }
-};
+}
+
+// Also add this helper function for showing messages
+const showMessage = (message, type = 'alert-success') => {
+  if (type === 'alert-success') {
+    successMessage.value = message;
+    isSuccess.value = true;
+    isError.value = false;
+  } else {
+    errorMessage.value = message;
+    isError.value = true;
+    isSuccess.value = false;
+  }
+  
+  setTimeout(() => {
+    isSuccess.value = false;
+    isError.value = false;
+  }, 5000);
+}
+
 
 const formatSalary = (amount) => {
   return new Intl.NumberFormat('en-US', {
