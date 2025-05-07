@@ -20,8 +20,7 @@ class AdminController extends Controller
                 'employers.email as employer_email',
                 'employers.phone as employer_phone',
                 'employers.website as employer_website'
-            )
-            ->get();
+            )->paginate(15); 
             
         return response()->json($jobs);
     }

@@ -28,8 +28,8 @@ export default {
   logout() {
     return api.post('/admin/logout')
   },
-  getAllJobs() {
-    return api.get('/admin/allJobs')
+  getAllJobs(page = 1 ) {
+    return api.get(`/admin/allJobs?page=${page}`)
   },
   approveJob(id) {
     return api.post(`/admin/approveJob/${id}`)

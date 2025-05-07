@@ -66,14 +66,14 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="jobs.length === 0">
-                <td colspan="9" class="text-center py-4">No jobs found</td>
-              </tr>
-              <tr
-                v-for="job in jobs"
-                :key="job.id"
-                class="table-row"
-              >
+              <tr v-if="jobs.data.length === 0">
+  <td colspan="9" class="text-center py-4">No jobs found</td>
+</tr>
+<tr
+  v-for="job in jobs.data"
+  :key="job.id"
+  class="table-row"
+>
                 <th scope="row">{{ job.id }}</th>
                 <td>{{ job.title }}</td>
                 <td>
@@ -139,28 +139,26 @@
         </div>
       </div>
       <div class="flexdiv"></div>
-      <div class="pagination-container">
-        <div class="records-info">
-          Showing {{ jobs.meta?.from }} to {{ jobs.meta?.to }} of
-          {{ jobs.meta?.total }} records
-        </div>
-        <nav aria-label="Page navigation">
-          <ul class="pagination justify-content-center">
-            <li
-              v-for="link in jobs.meta?.links"
-              :key="link.label"
-              class="page-item"
-              :class="{ active: link.active }"
-            >
-              <button
-                class="page-link"
-                @click="goToPage(link.url)"
-                v-html="link.label"
-              ></button>
-            </li>
-          </ul>
-        </nav>
-      </div>
+     <!-- Replace your current pagination-container with this: -->
+     <div class="pagination-container">
+  <div class="records-info">
+    Showing {{ jobs.data.length ? jobs.from : 0 }} to {{ jobs.to || 0 }} of {{ jobs.total || 0 }} records
+  </div>
+
+  <nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+      <li class="page-item" :class="{ disabled: !jobs.prev_page_url }">
+        <button class="page-link" @click="fetchJobs(jobs.current_page - 1)" :disabled="!jobs.prev_page_url">&laquo;</button>
+      </li>
+      <li v-for="page in getPageNumbers()" :key="page" class="page-item" :class="{ active: page === jobs.current_page }">
+        <button class="page-link" @click="fetchJobs(page)">{{ page }}</button>
+      </li>
+      <li class="page-item" :class="{ disabled: !jobs.next_page_url }">
+        <button class="page-link" @click="fetchJobs(jobs.current_page + 1)" :disabled="!jobs.next_page_url">&raquo;</button>
+      </li>
+    </ul>
+  </nav>
+</div>
     </div>
   </div>
 </template>
@@ -169,7 +167,11 @@
 import { ref, onMounted } from "vue";
 import api from "../services/api";
 
-const jobs = ref([]);
+const jobs = ref({
+  data: [],
+  meta: {},
+  links: []
+});
 const isLoading = ref(false);
 const isSuccess = ref(false);
 const isError = ref(false);
@@ -185,7 +187,11 @@ const fetchJobs = async (page = 1) => {
     const response = await api.getAllJobs(page);
     
     if (response.data) {
-      jobs.value = response.data.map(job => ({
+      // Store the entire pagination object directly
+      jobs.value = response.data;
+      
+      // Add processing flag to each job
+      jobs.value.data = jobs.value.data.map(job => ({
         ...job,
         processing: false
       }));
@@ -203,12 +209,21 @@ const fetchJobs = async (page = 1) => {
   }
 };
 
-const goToPage = (url) => {
-  if (url) {
-    const page = new URL(url).searchParams.get("page");
-    fetchJobs(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+// Helper function to generate page numbers
+const getPageNumbers = () => {
+  if (!jobs.value || !jobs.value.last_page) return [];
+  
+  const currentPage = jobs.value.current_page;
+  const lastPage = jobs.value.last_page;
+  const delta = 2; // Number of pages to show before and after current page
+  
+  let pages = [];
+  
+  for (let i = Math.max(1, currentPage - delta); i <= Math.min(lastPage, currentPage + delta); i++) {
+    pages.push(i);
   }
+  
+  return pages;
 };
 
 const approveJob = async (id) => {
@@ -613,3 +628,4 @@ onMounted(() => {
 
 @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css");
 </style>
+
